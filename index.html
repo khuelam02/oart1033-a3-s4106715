@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BREATHE.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- Fixed LP music toggle (top-left, hidden on landing) -->
+  <button id="btn-music" aria-label="Toggle music">
+    <img id="lp-img" src="images/LP.png" alt="LP">
+  </button>
+
+  <!-- Webcam preview + hand state badge -->
+  <div id="webcam-wrap">
+    <div class="webcam-box">
+      <video id="webcam" autoplay muted playsinline></video>
+      <canvas id="hand-overlay"></canvas>
+    </div>
+    <div id="hand-badge">
+      <span id="hand-icon-lbl">✋</span>
+      <span id="hand-state-lbl">OPEN</span>
+    </div>
+  </div>
+
+  <!-- Typing intro overlay -->
+  <div id="typing-overlay">
+    <button id="btn-skip" class="skip-btn">Skip ›</button>
+    <div id="typing-content">
+      <p id="typing-text"></p><span id="typing-cursor">|</span>
+    </div>
+  </div>
+
+  <!-- Hand gesture tutorial -->
+  <div id="hand-tutorial">
+    <button id="btn-skip-tutorial" class="skip-btn">Skip ›</button>
+    <div class="ht-inner">
+      <p class="ht-intro">Here are the gestures you'll use</p>
+      <div class="ht-gestures">
+        <div class="ht-gesture" id="htg-0">
+          <img src="images/inhale hand sign.png" alt="inhale">
+          <div class="ht-info">
+            <strong>INHALE</strong>
+            <span>Open your palm. Hold it open.</span>
+          </div>
+          <div class="ht-progress"><div class="ht-progress-fill"></div></div>
+        </div>
+        <div class="ht-gesture" id="htg-1">
+          <img src="images/exhale hand sign.png" alt="close fist">
+          <div class="ht-info">
+            <strong>HOLD</strong>
+            <span>Close your fist. Hold it closed.</span>
+          </div>
+          <div class="ht-progress"><div class="ht-progress-fill"></div></div>
+        </div>
+        <div class="ht-gesture" id="htg-2">
+          <img src="images/inhale hand sign.png" alt="open palm">
+          <div class="ht-info">
+            <strong>EXHALE</strong>
+            <span>Open your palm. Breathe it out.</span>
+          </div>
+          <div class="ht-progress"><div class="ht-progress-fill"></div></div>
+        </div>
+      </div>
+      <button id="btn-ready" class="btn-ghost ht-ready-btn">Time for yourself!</button>
+    </div>
+  </div>
+
+  <!-- 3-2-1 countdown before breathing starts -->
+  <div id="detect-countdown"></div>
+
+  <!-- Soul phase: mid-session message (after ~3 cycles) -->
+  <div id="soul-msg"><p>Keep connecting to your soul.</p></div>
+
+  <!-- Soul phase: final message + replay button (after ~6 cycles) -->
+  <div id="soul-final">
+    <p class="sf-title">You are whole.</p>
+    <p class="sf-sub">Carry this stillness with you, always.</p>
+    <button id="btn-soul-outro" class="btn-ghost sf-btn">Return to the world</button>
+  </div>
+
+  <!-- Phase word reveal -->
+  <div id="phase-reveal">
+    <span id="reveal-word"></span>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LANDING
+  ══════════════════════════════════════ -->
+  <section class="screen active" id="s-landing">
+    <div class="landing-center">
+      <img src="images/circle.png" class="circle-img" alt="">
+      <img src="images/typo-breathe.png" class="typo-img" alt="">
+    </div>
+    <div class="landing-cta">
+      <button id="btn-start" class="btn-ghost">Begin the Journey</button>
+    </div>
+    <nav class="bottom-nav">
+      <span class="nav-node">MIND</span>
+      <span class="nav-node">BODY</span>
+      <span class="nav-node">SOUL</span>
+    </nav>
+
+    <!-- Landing info button + panel -->
+    <button class="landing-info-btn" id="landing-info-btn" aria-label="About this experience">i</button>
+    <div class="landing-info-panel" id="landing-info-panel">
+      <button class="landing-info-close" id="landing-info-close">✕</button>
+      <p>This is an invitation to return to the ultimate ordinary, something you perform tens of thousands of times a day, yet always overlook: <em>Your breath.</em></p>
+      <p>It sounds simple, but breathing correctly is a profound sanctuary, a gentle anchor that shields you from the chaos of the outer world.</p>
+      <p>Allow yourself to slow down, and begin the journey through the three pillars of your existence: <em>Mind · Body · Soul</em></p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       EXPERIENCE  (MIND / BODY / SOUL)
+  ══════════════════════════════════════ -->
+  <section class="screen" id="s-exp">
+
+    <!-- Phase fog: covers canvas during hand-detection, fades on 3-2-1 countdown -->
+    <div id="phase-fog">
+      <p id="fog-hint">Raise your hand to the center of the screen</p>
+      <div id="fog-ring">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle class="fr-track" cx="50" cy="50" r="40"/>
+          <circle class="fr-fill"  cx="50" cy="50" r="40" id="fr-fill"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- MIND overlay -->
+    <div class="phase-ui" id="ui-mind">
+      <div class="phase-header">
+        <span class="phase-tag">MIND</span>
+        <span class="phase-tech">Box Breathing · 4·4·4·4</span>
+      </div>
+      <p class="phase-prompt">
+        Your mind is a busy highway.<br>
+        Each exhale untangles one thought at a time.
+      </p>
+
+      <button class="info-btn" id="info-btn" aria-label="About this breathing technique">i</button>
+
+      <div id="info-panel">
+        <button class="info-close" id="info-close">✕</button>
+        <h3 class="info-title">Box Breathing</h3>
+        <p class="info-tech-label">4 · 4 · 4 · 4 counts</p>
+        <div class="info-steps">
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/inhale hand sign.png" alt="open palm"></span>
+            <div class="info-step-text">
+              <strong>Open your palm</strong>
+              <span>Inhale slowly · 4 counts</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/exhale hand sign.png" alt="close fist"></span>
+            <div class="info-step-text">
+              <strong>Close your fist</strong>
+              <span>Hold · 4 counts</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/inhale hand sign.png" alt="open palm"></span>
+            <div class="info-step-text">
+              <strong>Open your palm</strong>
+              <span>Exhale slowly · 4 counts</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/exhale hand sign.png" alt="close fist"></span>
+            <div class="info-step-text">
+              <strong>Close your fist</strong>
+              <span>Hold · 4 counts</span>
+            </div>
+          </div>
+        </div>
+        <p class="info-desc">Box breathing activates the parasympathetic nervous system, slowing your heart rate and quieting mental chatter.</p>
+      </div>
+
+      <!-- Breath ring widget -->
+      <div class="breath-widget" id="mind-breath-widget">
+        <div class="b-ring" id="ring-mind"></div>
+        <div class="b-label">
+          <span class="b-phase" id="lbl-phase">···</span>
+          <span class="b-count" id="lbl-count"></span>
+          <span class="b-hint"  id="lbl-hint"></span>
+          <span class="b-cycles" id="lbl-cycles"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY overlay -->
+    <div class="phase-ui hidden" id="ui-body">
+      <div class="phase-header">
+        <span class="phase-tag">BODY</span>
+        <span class="phase-tech">4 · 7 · 8 Breathing</span>
+      </div>
+
+      <p class="phase-prompt">
+        Your body has carried you through every hard day.<br>
+        Let your breath nourish every cell.
+      </p>
+
+      <button class="info-btn" id="info-btn-body" aria-label="About this breathing technique">i</button>
+
+      <div id="info-panel-body">
+        <button class="info-close" id="info-close-body">✕</button>
+        <h3 class="info-title">4-7-8 Breathing</h3>
+        <p class="info-tech-label">4 · 7 · 8 counts</p>
+        <div class="info-steps">
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/inhale hand sign.png" alt="open palm"></span>
+            <div class="info-step-text">
+              <strong>Open your palm</strong>
+              <span>Inhale slowly · 4 counts</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/exhale hand sign.png" alt="close fist"></span>
+            <div class="info-step-text">
+              <strong>Close your fist</strong>
+              <span>Hold · 7 counts</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/inhale hand sign.png" alt="open palm"></span>
+            <div class="info-step-text">
+              <strong>Open your palm</strong>
+              <span>Exhale slowly · 8 counts</span>
+            </div>
+          </div>
+        </div>
+        <p class="info-desc">4-7-8 breathing activates the parasympathetic nervous system, reducing tension and anchoring the body in the present moment.</p>
+      </div>
+
+      <div class="breath-widget">
+        <div class="b-ring warm" id="ring-body"></div>
+        <div class="b-label">
+          <span class="b-phase" id="lbl-body-phase">···</span>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SOUL overlay -->
+    <div class="phase-ui hidden" id="ui-soul">
+      <div class="phase-header">
+        <span class="phase-tag">SOUL</span>
+        <span class="phase-tech">Intuitive Breathing</span>
+      </div>
+      <p class="phase-prompt">
+        Your breath belongs to everything.<br>
+        Let go of control, become one.
+      </p>
+
+      <button class="info-btn" id="info-btn-soul" aria-label="About this breathing technique">i</button>
+
+      <div id="info-panel-soul">
+        <button class="info-close" id="info-close-soul">✕</button>
+        <h3 class="info-title">Intuitive Breathing</h3>
+        <p class="info-tech-label">Free-form · Follow your body</p>
+        <div class="info-steps">
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/inhale-hand-soul.png" alt="open palm"></span>
+            <div class="info-step-text">
+              <strong>Open your palm</strong>
+              <span>Inhale, no count, just feel</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/hold-hand-soul.png" alt="close fist"></span>
+            <div class="info-step-text">
+              <strong>Close your fist</strong>
+              <span>Hold, let the stillness settle</span>
+            </div>
+          </div>
+          <div class="info-divider"></div>
+          <div class="info-step">
+            <span class="info-step-icon"><img src="images/inhale-hand-soul.png" alt="open palm"></span>
+            <div class="info-step-text">
+              <strong>Open your palm</strong>
+              <span>Exhale, release everything</span>
+            </div>
+          </div>
+        </div>
+        <p class="info-desc">No rhythm. No rules. Simply breathe as your body asks, surrendering to the natural wisdom already within you.</p>
+      </div>
+    </div>
+
+    <!-- Body- flowers -->
+    <img class="body-fl" id="bfl-1" src="images/flower1-body-left.png" alt="">
+    <img class="body-fl" id="bfl-2" src="images/flower2-body-left.png" alt="">
+    <img class="body-fl" id="bfl-3" src="images/flower3-body-left.png" alt="">
+    <img class="body-fl" id="bfl-1-r" src="images/flower 1-body.png"    alt="">
+    <img class="body-fl" id="bfl-2-r" src="images/flower 2-body.png"    alt="">
+
+
+
+
+    <!-- Lung video (BODY phase) -->
+    <video id="body-lung-video" preload="auto" muted playsinline loop>
+      <source src="video/lung-vid.webm" type="video/webm">
+      <source src="video/lung-vid.mov"  type="video/quicktime">
+    </video>
+
+    <!-- Soul flower (shown via JS when hands close) -->
+    <img id="soul-flower" src="images/flower-soul.png" alt="">
+
+
+
+    <!-- Soul hand images -->
+    <img id="soul-bottom-hand" src="images/bottom-hand-soul.png" alt="">
+    <img id="soul-top-hand"    src="images/top-hand-soul.png"    alt="">
+
+    <!-- Soul sparkle stars (upper-right of flower) -->
+    <img id="soul-star-1" src="images/star-soul.png" alt="">
+    <img id="soul-star-2" src="images/star-soul.png" alt="">
+
+    <!-- Step instruction (bottom center, MIND) -->
+    <div id="mind-instruction"></div>
+    <!-- Step instruction (bottom center, BODY) -->
+    <div id="body-instruction"></div>
+
+    <!-- Phase progress bar -->
+    <div id="phase-progress">
+      <div class="pp-rail">
+        <div class="pp-rail-fill" id="pp-rail-fill"></div>
+        <div class="pp-rail-dot"  id="pp-rail-dot"></div>
+      </div>
+      <div class="pp-labels">
+        <span id="ppl-mind">MIND</span>
+        <span id="ppl-body">BODY</span>
+        <span id="ppl-soul">SOUL</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       OUTRO
+  ══════════════════════════════════════ -->
+  <section class="screen" id="s-outro">
+    <div class="outro-inner">
+      <div class="outro-lines">
+        <p class="o-line">Mind is still.</p>
+        <p class="o-line">Body is light.</p>
+        <p class="o-line">Soul is open.</p>
+      </div>
+      <p class="o-sub">
+        The extraordinary ordinary is always there to hold you.<br>
+        When life outside moves too fast, remember how to pause.<br>
+        and open your palm.
+      </p>
+      <button id="btn-restart" class="btn-ghost outro-btn">Breathe Again</button>
+    </div>
+  </section>
+
+  <!-- Audio -->
+
+  <audio id="audio-music"   src="audio/background%20music.mp4" loop></audio>
+  <audio id="audio-vo"      src="audio/box-breathing%20voice%20over.wav"></audio>
+  <audio id="audio-vo-body" src="audio/voice%20over%20-%20body.wav"></audio>
+  <audio id="audio-vo-soul" src="audio/soul-voice%20over.wav"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>
